@@ -1,0 +1,7 @@
+/build*/
+/files/
+*.o
+.DS_Store
+/node_modules/
+/web-smoke.png
+/emsdk-cache/

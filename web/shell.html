@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Stimulus · visual experiments</title>
+<style>
+body{margin:0;background:#182733;color:#edf2f4;font:16px system-ui,sans-serif}main{max-width:850px;margin:24px auto;padding:0 18px}header{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}h1{margin:0;font-size:25px}p{line-height:1.5;color:#bdcbd3}button,label{border:1px solid #76939d;border-radius:6px;padding:9px 14px;background:#233f4d;color:white;cursor:pointer;font:inherit}canvas{display:block;width:100%;max-width:800px;height:auto;aspect-ratio:1;background:#f5f5f5;margin:18px auto;outline:none}canvas:fullscreen{width:min(100vw,100vh);height:min(100vw,100vh);margin:auto}input{max-width:230px}#status{min-height:24px}a{color:#a3e0db}small{line-height:1.5;display:block}
+</style>
+</head>
+<body><main>
+<header><h1>Stimulus</h1><div><label>Import JSON <input id="import" type="file" accept=".json,application/json" disabled></label> <button id="fullscreen" disabled>Full screen</button></div></header>
+<p>Create visual stimulus sequences. Run locally in your browser with WebAssembly.</p>
+<div id="status" role="status">Loading WebAssembly…</div>
+<canvas id="canvas" width="800" height="800" tabindex="0" aria-label="Stimulus experiment canvas" oncontextmenu="event.preventDefault()"></canvas>
+<small>Click the canvas to use keyboard responses. Escape stops presentation. Switching tabs or losing window focus aborts the session. Save keeps your library in this browser; export JSON for a portable backup. Display timing depends on the browser and monitor; validate with external hardware before timing-sensitive research.</small>
+<p><a href="https://github.com/ze-gois/stimulus">Source and documentation</a></p>
+</main>
+<script>
+const canvas = document.getElementById('canvas');
+const status = document.getElementById('status');
+var Module = {
+  canvas,
+  print: console.log,
+  printErr: console.error,
+  onAbort: reason => {status.textContent = 'Unable to run: ' + reason;},
+  onRuntimeInitialized: () => {
+    status.textContent = 'Ready · all data stays on this device';
+    document.getElementById('import').disabled = false;
+    document.getElementById('fullscreen').disabled = false;
+    canvas.focus();
+  }
+};
+canvas.addEventListener('click', () => canvas.focus());
+document.getElementById('fullscreen').onclick = async () => {
+  try { await canvas.requestFullscreen(); canvas.focus(); } catch(e) { status.textContent = e.message; }
+};
+document.getElementById('import').onchange = async event => {
+  const file = event.target.files[0];
+  if (!file) return;
+  try {
+    if(file.size > 4*1024*1024) throw new Error('JSON exceeds 4 MiB');
+    const ok = Module.ccall('stimulus_import', 'number', ['string'], [await file.text()]);
+    status.textContent = ok ? 'Imported. Save library to keep it.' : 'Import rejected; see the canvas message.';
+  } catch(e) { status.textContent = e.message; }
+  event.target.value = ''; canvas.focus();
+};
+</script>
+{{{ SCRIPT }}}
+</body></html>
