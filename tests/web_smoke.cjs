@@ -4,14 +4,15 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs/promises');
 (async () => {
   const browser = await chromium.launch({headless:true, args:['--enable-webgl', '--use-gl=angle', '--use-angle=swiftshader']});
+  let page;
   try {
-    const page = await browser.newPage({viewport:{width:1000,height:1200}, acceptDownloads:true});
+    page = await browser.newPage({viewport:{width:1000,height:1200}, acceptDownloads:true});
     const errors = [];
-    page.on('pageerror', e => errors.push(e.message));
+    page.on('pageerror', e => { errors.push(e.message); console.error(e.message); });
     await page.goto('http://127.0.0.1:8000');
     await page.waitForFunction(() => document.getElementById('status').textContent.startsWith('Ready'));
     const canvas = page.locator('canvas');
-    async function click(x,y) { const box = await canvas.boundingBox(); await page.mouse.click(box.x+x*box.width/800,box.y+y*box.height/800); }
+    async function click(x,y) { const box = await canvas.boundingBox(); await page.mouse.click(box.x+x*box.width/800,box.y+y*box.height/800, {delay:60}); await page.waitForTimeout(60); }
     async function importLibrary(value) {
       await page.locator('#import').setInputFiles({name:'library.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(value))});
       await page.waitForFunction(() => document.getElementById('status').textContent.startsWith('Imported'));
@@ -70,5 +71,5 @@ const fs = require('node:fs/promises');
     await page.screenshot({path:'web-smoke.png',fullPage:true});
     assert.deepEqual(errors,[]);
     console.log('Web smoke passed: empty library, editor, persistence, import, presentation, responses, export, abort.');
-  } finally { await browser.close(); }
+  } finally { if (page && !page.isClosed()) await page.screenshot({path:'web-smoke.png',fullPage:true}).catch(() => {}); await browser.close(); }
 })().catch(error => { console.error(error); process.exitCode=1; });
