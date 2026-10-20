@@ -167,6 +167,7 @@ void App::library_screen() {
     if (button(658, 586, 116, "Start", !library_.sequence.empty())) {
         // Clear navigation keys so they cannot become experimental responses.
         while (GetKeyPressed() != 0) {}
+        reset_focus_tracking();
         session_.start(library_.sequence, GetTime());
         begin_trial(); screen_ = Screen::Presenting; HideCursor();
         // Replace this menu frame with the first trial, matching the recorded boundary.

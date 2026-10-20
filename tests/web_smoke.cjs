@@ -41,12 +41,28 @@ const fs = require('node:fs/promises');
     assert.equal(report.trials[0].responses[0].key,65);
     assert.ok(report.trials.every(t => t.end_seconds-t.onset_seconds >= 1));
     assert.ok(report.trials[0].responses[0].trial_seconds < 1);
+    await page.screenshot({path:'web-smoke.png',fullPage:true});
     await click(580,415); // Back
     await click(700,600); await page.waitForTimeout(100); await page.keyboard.press('Escape');
     const abortedDownload = page.waitForEvent('download'); await click(100,415);
     const aborted = JSON.parse(await fs.readFile(await (await abortedDownload).path(),'utf8'));
     assert.equal(aborted.status,'aborted_escape');
     assert.equal(aborted.trials.length,1);
+    // A blur is remembered even if rendering is suspended until focus returns.
+    await click(580,415); await click(700,600);
+    await page.evaluate(() => window.dispatchEvent(new Event('blur')));
+    await page.waitForTimeout(100);
+    const focusDownload = page.waitForEvent('download'); await click(100,415);
+    const focus = JSON.parse(await fs.readFile(await (await focusDownload).path(),'utf8'));
+    assert.equal(focus.status,'aborted_focus_loss');
+    // Render all stimulus kinds in a complete short experiment.
+    const kinds = ['RandomCircles','ColoredWords','Fixing'].map(type => ({type,duration:1,repetitions:1}));
+    await importLibrary({schema_version:1,stimuli:kinds,sequence:kinds});
+    await click(700,600); await page.waitForTimeout(3400);
+    const allKindsDownload = page.waitForEvent('download'); await click(100,415);
+    const allKinds = JSON.parse(await fs.readFile(await (await allKindsDownload).path(),'utf8'));
+    assert.equal(allKinds.status,'completed');
+    assert.deepEqual(allKinds.trials.map(t => t.config.type),kinds.map(t => t.type));
     // Failed import is rejected without losing the valid saved library.
     await page.locator('#import').setInputFiles({name:'bad.json',mimeType:'application/json',buffer:Buffer.from('{bad')});
     await page.waitForFunction(() => document.getElementById('status').textContent.startsWith('Import rejected'));

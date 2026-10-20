@@ -87,9 +87,23 @@ std::string read_import_text() {
     return read_file("files/import.json");
 #endif
 }
+void reset_focus_tracking() {
+#ifdef __EMSCRIPTEN__
+    EM_ASM({
+        if (!window.stimulusFocusTracking) {
+            window.addEventListener('blur', () => { window.stimulusLostFocus = true; });
+            document.addEventListener('visibilitychange', () => {
+                if (document.hidden) window.stimulusLostFocus = true;
+            });
+            window.stimulusFocusTracking = true;
+        }
+        window.stimulusLostFocus = false;
+    });
+#endif
+}
 bool presentation_focused() {
 #ifdef __EMSCRIPTEN__
-    return EM_ASM_INT({return !document.hidden && document.hasFocus();}) != 0;
+    return EM_ASM_INT({return !window.stimulusLostFocus && !document.hidden && document.hasFocus();}) != 0;
 #else
     return IsWindowFocused();
 #endif

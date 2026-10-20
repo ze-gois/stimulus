@@ -39,7 +39,15 @@ document.getElementById('import').onchange = async event => {
   if (!file) return;
   try {
     if(file.size > 4*1024*1024) throw new Error('JSON exceeds 4 MiB');
-    const ok = Module.ccall('stimulus_import', 'number', ['string'], [await file.text()]);
+    const text = await file.text();
+    const size = Module.lengthBytesUTF8(text) + 1;
+    const ptr = Module._malloc(size);
+    if (!ptr) throw new Error('Not enough memory to import JSON');
+    let ok;
+    try {
+      Module.stringToUTF8(text, ptr, size);
+      ok = Module.ccall('stimulus_import', 'number', ['number'], [ptr]);
+    } finally { Module._free(ptr); }
     status.textContent = ok ? 'Imported. Save library to keep it.' : 'Import rejected; see the canvas message.';
   } catch(e) { status.textContent = e.message; }
   event.target.value = ''; canvas.focus();

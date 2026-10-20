@@ -70,8 +70,7 @@ and a Chromium smoke test. PRs only build/test. Successful builds on `main` depl
 through the official Pages artifact workflow.
 
 **One-time repository setup:** in **Settings → Pages → Build and deployment**, set
-**Source = GitHub Actions**. Merge this change into `main` or run **Build, test and
-deploy** manually on `main`. The expected URL is
+**Source = GitHub Actions**. Merge this change into `main` or run **Build and deploy** manually on `main`. The expected URL is
 <https://ze-gois.github.io/stimulus/>; it becomes available only after a successful
 deployment. The Pages setting is a repository administration step, not set by this code.
 
